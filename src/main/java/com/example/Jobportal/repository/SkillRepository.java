@@ -1,9 +1,8 @@
 package com.example.Jobportal.repository;
-
-import com.example.Jobportal.entity.JobEntity;
 import org.springframework.data.jpa.repository.JpaRepository;
+import com.example.Jobportal.entity.SkillEntity;
 import org.springframework.stereotype.Repository;
 
 @Repository
-public interface JobRepository extends JpaRepository<JobEntity,Long> {
+public interface SkillRepository extends JpaRepository <SkillEntity,Long> {
 }
