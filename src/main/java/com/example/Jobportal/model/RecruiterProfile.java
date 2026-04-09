@@ -1,15 +1,12 @@
-package com.example.Jobportal.entity;
-import jakarta.persistence.*;
+package com.example.Jobportal.model;
+
 import lombok.Getter;
 import lombok.Setter;
+
 @Getter
 @Setter
-@Entity
-@Table(name = "recruiter_profiles")
-public class RecruiterProfileEntity {
+public class RecruiterProfile {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
     private Long userId;
     private String companyName;
@@ -17,8 +14,12 @@ public class RecruiterProfileEntity {
     private String specialization;
     private String companyWebsite;
     private String linkedInUrl;
-    public RecruiterProfileEntity() {}
-    public RecruiterProfileEntity(Long id, Long userId, String companyName,
+
+    // No-args constructor
+    public RecruiterProfile() {}
+
+    // Parameterized constructor
+    public RecruiterProfile(Long id, Long userId, String companyName,
                             String jobTitle, String specialization,
                             String companyWebsite, String linkedInUrl) {
         this.id = id;
