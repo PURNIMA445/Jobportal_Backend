@@ -6,13 +6,12 @@ import java.util.List;
 
 public interface RecruiterProfileService {
 
-    RecruiterProfile createProfile(RecruiterProfile recruiterProfile);
-
-    List<RecruiterProfile> getAllProfiles();
-
+    RecruiterProfile createProfile(Long userId, Long companyId, RecruiterProfile profile);
     RecruiterProfile getProfileById(Long id);
-
-    RecruiterProfile updateProfile(Long id, RecruiterProfile recruiterProfile);
-
+    RecruiterProfile getProfileByUserId(Long userId);          // fetch own profile after login
+    List<RecruiterProfile> getAllProfiles();
+    List<RecruiterProfile> getProfilesByCompany(Long companyId);
+    RecruiterProfile updateProfile(Long id, RecruiterProfile profile);
+    RecruiterProfile assignToCompany(Long profileId, Long companyId); // change company
     boolean deleteProfile(Long id);
 }
