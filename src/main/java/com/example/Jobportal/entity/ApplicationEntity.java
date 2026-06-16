@@ -1,45 +1,49 @@
 package com.example.Jobportal.entity;
 
-import com.example.Jobportal.enums.ApplicationStatus;
+import com.example.Jobportal.enums.AppStatus;
 import jakarta.persistence.*;
-import lombok.Getter;
-import lombok.Setter;
+import lombok.*;
+import java.time.LocalDateTime;
 
-import java.time.LocalDate;
-
-@Getter
-@Setter
 @Entity
 @Table(name = "applications")
+@Getter @Setter
+@NoArgsConstructor @AllArgsConstructor
+@Builder
 public class ApplicationEntity {
-    
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "candidate_id", nullable = false)
     private CandidateProfileEntity candidate;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "job_id", nullable = false)
     private JobEntity job;
 
     @Enumerated(EnumType.STRING)
-    private ApplicationStatus status;
+    @Column(nullable = false)
+    private AppStatus status;
 
-    // AI match score between candidate profile and job description
+    // AI fields — null until candidate triggers score check
     private Double matchScore;
+    private Double rankScore;
 
-    private LocalDate appliedDate;
+    @Column(columnDefinition = "TEXT")
+    private String missingSkills;
 
-    public ApplicationEntity() {}
+    @Column(columnDefinition = "TEXT")
+    private String coverLetter;
 
-    public ApplicationEntity(CandidateProfileEntity candidate, JobEntity job, ApplicationStatus status, Double matchScore, LocalDate appliedDate) {
-        this.candidate = candidate;
-        this.job = job;
-        this.status = status;
-        this.matchScore = matchScore;
-        this.appliedDate = appliedDate;
+    @Column(nullable = false, updatable = false)
+    private LocalDateTime appliedAt;
+
+    @PrePersist
+    protected void onCreate() {
+        this.appliedAt = LocalDateTime.now();
+        if (this.status == null) this.status = AppStatus.APPLIED;
     }
 }
