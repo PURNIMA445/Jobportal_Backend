@@ -30,7 +30,8 @@ public class JwtAuthFilter extends OncePerRequestFilter {
 
         // 1. Read the Authorization header
         String authHeader = request.getHeader("Authorization");
-
+        System.out.println("AUTH HEADER: " + authHeader);
+        System.out.println("REQUEST URI: " + request.getRequestURI());
         // 2. If no token, skip — Spring Security will handle it as unauthenticated
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
             filterChain.doFilter(request, response);

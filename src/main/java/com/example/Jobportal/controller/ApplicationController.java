@@ -7,12 +7,18 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
-
+import com.example.Jobportal.dto.MatchScoreResponse;
+import com.example.Jobportal.service.AiMatchingService;
+import org.springframework.web.multipart.MultipartFile;
+import com.example.Jobportal.entity.ApplicationEntity;
+import com.example.Jobportal.entity.JobEntity;
+import com.example.Jobportal.repository.ApplicationRepository;
 @RestController
 @RequestMapping("/api/applications")
 @RequiredArgsConstructor
 public class ApplicationController {
-
+    private final AiMatchingService aiMatchingService;
+    private final ApplicationRepository applicationRepository;
     private final ApplicationService applicationService;
 
     @PostMapping("/apply/{jobId}")
@@ -57,6 +63,69 @@ public class ApplicationController {
         try {
             return ResponseEntity.ok(
                     applicationService.updateStatus(applicationId, userId, status));
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+    @PostMapping("/{applicationId}/check-score")
+    public ResponseEntity<?> checkScore(
+            @PathVariable Long applicationId,
+            @AuthenticationPrincipal Long userId,
+            @RequestParam("resume") MultipartFile resume) {
+        try {
+            // 1. get the application
+            ApplicationEntity application = applicationRepository
+                    .findById(applicationId)
+                    .orElseThrow(() -> new RuntimeException("Application not found"));
+
+            // 2. verify this candidate owns this application
+            if (!application.getCandidate().getUser().getId().equals(userId)) {
+                return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                        .body("Access denied");
+            }
+
+            // 3. get job details for AI
+            JobEntity job = application.getJob();
+            String requiredSkills = job.getRequiredSkills()
+                    .stream()
+                    .map(s -> s.getName())
+                    .collect(java.util.stream.Collectors.joining(","));
+
+            // 4. call AI service
+            MatchScoreResponse aiResult = aiMatchingService.analyzeResume(
+                    resume,
+                    job.getDescription(),
+                    requiredSkills,
+                    job.getExperienceLevel().name()
+            );
+
+            // 5. store results in application
+            application.setMatchScore(aiResult.getMatchScore());
+            application.setMissingSkills(
+                    String.join(",", aiResult.getMissingSkills())
+            );
+
+            // 6. compute rankScore
+            int experienceYears = application.getCandidate()
+                    .getExperienceYears() != null
+                    ? application.getCandidate().getExperienceYears() : 0;
+
+            int projectCount = application.getCandidate()
+                    .getProjects() != null
+                    ? application.getCandidate().getProjects().size() : 0;
+
+            double expScore = Math.min(experienceYears / 5.0, 1.0) * 20;
+            double projectScore = Math.min(projectCount / 3.0, 1.0) * 20;
+            double rankScore = (aiResult.getMatchScore() * 0.60)
+                    + expScore + projectScore;
+
+            application.setRankScore(Math.round(rankScore * 10.0) / 10.0);
+
+            applicationRepository.save(application);
+
+            // 7. return full AI analysis to frontend
+            return ResponseEntity.ok(aiResult);
+
         } catch (RuntimeException e) {
             return ResponseEntity.badRequest().body(e.getMessage());
         }

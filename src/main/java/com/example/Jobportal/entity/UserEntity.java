@@ -32,7 +32,8 @@ public class UserEntity {
 
     @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt;
-
+    private String otpCode;
+    private LocalDateTime otpExpiry;
     @PrePersist
     protected void onCreate() {
         this.createdAt = LocalDateTime.now();
