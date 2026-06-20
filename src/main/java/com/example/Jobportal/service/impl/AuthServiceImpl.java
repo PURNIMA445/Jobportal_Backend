@@ -11,8 +11,10 @@ import org.springframework.stereotype.Service;
 import com.example.Jobportal.dto.LoginRequest;
 import com.example.Jobportal.model.AuthResponse;
 import com.example.Jobportal.utils.JwtUtils;
+import com.example.Jobportal.enums.Role;
 
-
+import java.util.Optional;
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -21,6 +23,7 @@ public class AuthServiceImpl implements AuthService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtUtils jwtUtils;
+
     @Override
     public User signup(SignupRequest request) {
 
@@ -49,7 +52,6 @@ public class AuthServiceImpl implements AuthService {
         );
     }
 
-
     @Override
     public AuthResponse login(LoginRequest request) {
 
@@ -69,6 +71,41 @@ public class AuthServiceImpl implements AuthService {
                 user.getId()
         );
         // 4. Return token + role + userId
+        return new AuthResponse(token, user.getRole().name(), user.getId());
+    }
+
+    // --- NEW METHOD FOR GOOGLE LOGIN ---
+    @Override
+    public AuthResponse processSocialLogin(String email, Role role) {
+        
+        // 1. Check if a user with this Google email already exists in our database
+        Optional<UserEntity> userOptional = userRepository.findByEmail(email);
+        UserEntity user;
+
+        if (userOptional.isPresent()) {
+            // User exists! Just log them in.
+            user = userOptional.get();
+        } else {
+            // User does NOT exist! Create a new account for them automatically.
+            user = UserEntity.builder()
+                    .email(email)
+                    .password(passwordEncoder.encode(UUID.randomUUID().toString())) // Random secure password
+                    .role(role != null ? role : Role.CANDIDATE) // Default to CANDIDATE if missing
+                    .isEmailVerified(true) // Set to true because Google already verified their email!
+                    .build();
+            
+            // Save the new user to the database
+            user = userRepository.save(user);
+        }
+
+        // 2. Generate JWT using your specific JwtUtils signature
+        String token = jwtUtils.generateToken(
+                user.getEmail(),
+                user.getRole().name(),
+                user.getId()
+        );
+
+        // 3. Return the exact AuthResponse structure your app expects
         return new AuthResponse(token, user.getRole().name(), user.getId());
     }
 }
