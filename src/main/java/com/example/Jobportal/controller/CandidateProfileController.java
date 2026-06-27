@@ -51,6 +51,15 @@ public class CandidateProfileController {
         }
     }
 
+    @GetMapping("/search")
+    public ResponseEntity<?> searchCandidates() {
+        try {
+            return ResponseEntity.ok(candidateProfileService.getAllProfiles());
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
     private Long getUserIdFromEmail(String email) {
         // we'll replace this with a cleaner solution next
         throw new RuntimeException("Not implemented yet");

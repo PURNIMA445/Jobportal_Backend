@@ -23,6 +23,7 @@ public interface JobRepository extends JpaRepository<JobEntity, Long> {
     @Query("SELECT j FROM JobEntity j WHERE " +
             "j.status = 'OPEN' AND " +
             "(LOWER(j.title) LIKE LOWER(CONCAT('%', :keyword, '%')) OR " +
-            "LOWER(j.description) LIKE LOWER(CONCAT('%', :keyword, '%')))")
+            "LOWER(j.description) LIKE LOWER(CONCAT('%', :keyword, '%')) OR " +
+            "LOWER(j.company.name) LIKE LOWER(CONCAT('%', :keyword, '%')))")
     List<JobEntity> searchByKeyword(@Param("keyword") String keyword);
 }

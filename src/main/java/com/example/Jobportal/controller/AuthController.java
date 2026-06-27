@@ -60,6 +60,32 @@ public class AuthController {
         }
     }
 
+    // --- GITHUB LOGIN ENDPOINT ---
+    @PostMapping("/github")
+    public ResponseEntity<?> githubLogin(@RequestBody GoogleLoginRequest request) {
+        try {
+            // 1. Verify the token securely with Firebase Admin SDK
+            FirebaseToken decodedToken = FirebaseAuth.getInstance().verifyIdToken(request.getToken());
+            String email = decodedToken.getEmail();
+
+            // GitHub might not provide an email if it's private, handle if null
+            if (email == null || email.isEmpty()) {
+                // If email is null, Firebase sometimes stores the UID.
+                // We'll throw an exception for now if email is truly missing.
+                throw new RuntimeException("No email provided by GitHub/Firebase");
+            }
+
+            // 2. Pass the verified email and requested role to your AuthService
+            AuthResponse response = authService.processSocialLogin(email, request.getRole());
+
+            return ResponseEntity.ok(response);
+
+        } catch (Exception e) {
+            System.err.println("GitHub Auth Error: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Invalid or expired GitHub Token: " + e.getMessage());
+        }
+    }
+
     @GetMapping("/me")
     public ResponseEntity<?> me(@RequestHeader("Authorization") String authHeader) {
         return ResponseEntity.ok("Token is valid, you are authenticated");

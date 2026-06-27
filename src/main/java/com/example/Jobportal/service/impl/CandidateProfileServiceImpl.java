@@ -100,6 +100,13 @@ public class CandidateProfileServiceImpl implements CandidateProfileService {
         return toResponse(saved);
     }
 
+    @Override
+    public List<CandidateProfileResponse> getAllProfiles() {
+        return candidateProfileRepository.findAll().stream()
+                .map(this::toResponse)
+                .collect(Collectors.toList());
+    }
+
     // ── helpers ──────────────────────────────────────────────────────────────
 
     private List<SkillEntity> resolveSkills(List<Long> skillIds) {
