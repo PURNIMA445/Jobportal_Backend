@@ -9,4 +9,5 @@ import java.util.Optional;
 public interface RecruiterProfileRepository extends JpaRepository<RecruiterProfileEntity, Long> {
     Optional<RecruiterProfileEntity> findByUserId(Long userId);
     Boolean existsByUserId(Long userId);
+    void deleteByUserId(Long userId);
 }

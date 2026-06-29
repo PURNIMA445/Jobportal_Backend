@@ -10,4 +10,5 @@ public interface SavedJobRepository extends JpaRepository<SavedJobEntity, Long> 
     List<SavedJobEntity> findByCandidateId(Long candidateId);
     Boolean existsByCandidateIdAndJobId(Long candidateId, Long jobId);
     void deleteByCandidateIdAndJobId(Long candidateId, Long jobId);
+    void deleteByCandidateId(Long candidateId);
 }

@@ -9,4 +9,5 @@ import java.util.Optional;
 public interface CandidateProfileRepository extends JpaRepository<CandidateProfileEntity, Long> {
     Optional<CandidateProfileEntity> findByUserId(Long userId);
     Boolean existsByUserId(Long userId);
+    void deleteByUserId(Long userId);
 }

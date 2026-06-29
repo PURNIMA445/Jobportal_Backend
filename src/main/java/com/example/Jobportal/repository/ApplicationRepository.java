@@ -28,4 +28,7 @@ public interface ApplicationRepository extends JpaRepository<ApplicationEntity, 
             @Param("jobId") Long jobId,
             @Param("status") AppStatus status
     );
+    List<ApplicationEntity> findByJobIdIn(List<Long> jobIds);
+    void deleteByJobIdIn(List<Long> jobIds);
+    void deleteByCandidateId(Long candidateId);
 }
