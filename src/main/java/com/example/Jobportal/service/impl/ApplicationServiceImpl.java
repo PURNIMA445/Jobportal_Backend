@@ -115,6 +115,19 @@ public class ApplicationServiceImpl implements ApplicationService {
         return toResponse(saved);
     }
 
+    @Override
+    public ApplicationEntity getApplicationForCvAccess(Long applicationId, Long userId) {
+        ApplicationEntity application = applicationRepository.findById(applicationId)
+                .orElseThrow(() -> new RuntimeException("Application not found"));
+
+        // same ownership pattern as updateStatus / getJobApplications
+        if (!application.getJob().getRecruiter().getUser().getId().equals(userId)) {
+            throw new RuntimeException("Access denied");
+        }
+
+        return application;
+    }
+
     private ApplicationResponse toResponse(ApplicationEntity app) {
         return ApplicationResponse.builder()
                 .id(app.getId())

@@ -1,5 +1,8 @@
 package com.example.Jobportal.controller;
-
+import com.example.Jobportal.dto.ForgotPasswordRequest;
+import com.example.Jobportal.dto.ResetPasswordRequest;
+import com.example.Jobportal.dto.ChangePasswordRequest;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import com.example.Jobportal.dto.FirebaseAuthRequest;
 import com.example.Jobportal.dto.GoogleLoginRequest;
 import com.example.Jobportal.dto.LoginRequest;
@@ -48,50 +51,6 @@ public class AuthController {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(e.getMessage());
         }
     }
-    // --- NEW GOOGLE LOGIN ENDPOINT ---
-    @PostMapping("/google")
-    public ResponseEntity<?> googleLogin(@RequestBody GoogleLoginRequest request) {
-        try {
-            // 1. Verify the token securely with Firebase Admin SDK
-            FirebaseToken decodedToken = FirebaseAuth.getInstance().verifyIdToken(request.getToken());
-            String email = decodedToken.getEmail();
-
-            // 2. Pass the verified email and requested role to your AuthService
-            AuthResponse response = authService.processSocialLogin(email, request.getRole());
-
-            return ResponseEntity.ok(response);
-
-        } catch (Exception e) {
-            System.err.println("Google Auth Error: " + e.getMessage());
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Invalid or expired Google Token");
-        }
-    }
-
-    // --- GITHUB LOGIN ENDPOINT ---
-    @PostMapping("/github")
-    public ResponseEntity<?> githubLogin(@RequestBody GoogleLoginRequest request) {
-        try {
-            // 1. Verify the token securely with Firebase Admin SDK
-            FirebaseToken decodedToken = FirebaseAuth.getInstance().verifyIdToken(request.getToken());
-            String email = decodedToken.getEmail();
-
-            // GitHub might not provide an email if it's private, handle if null
-            if (email == null || email.isEmpty()) {
-                // If email is null, Firebase sometimes stores the UID.
-                // We'll throw an exception for now if email is truly missing.
-                throw new RuntimeException("No email provided by GitHub/Firebase");
-            }
-
-            // 2. Pass the verified email and requested role to your AuthService
-            AuthResponse response = authService.processSocialLogin(email, request.getRole());
-
-            return ResponseEntity.ok(response);
-
-        } catch (Exception e) {
-            System.err.println("GitHub Auth Error: " + e.getMessage());
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Invalid or expired GitHub Token: " + e.getMessage());
-        }
-    }
     @PostMapping("/send-verification-otp")
     public ResponseEntity<?> sendVerificationOtp(@RequestParam String email) {
         try {
@@ -119,10 +78,48 @@ public class AuthController {
     public ResponseEntity<?> firebaseLogin(@Valid @RequestBody FirebaseAuthRequest request) {
         try {
             return ResponseEntity.ok(
-                    authService.loginWithFirebase(request.getIdToken(), request.getRole())
+                    authService.loginWithFirebase(request.getIdToken(), request.getRole(),request.isAllowCreate())
             );
         } catch (RuntimeException e) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(e.getMessage());
+        }
+    }
+    @PostMapping("/forgot-password")
+    public ResponseEntity<?> forgotPassword(@Valid @RequestBody ForgotPasswordRequest request) {
+        try {
+            authService.sendPasswordResetOtp(request.getEmail());
+            return ResponseEntity.ok(Map.of("message", "Password reset OTP sent to your email"));
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("message", e.getMessage()));
+        }
+    }
+
+    @PostMapping("/reset-password")
+    public ResponseEntity<?> resetPassword(@Valid @RequestBody ResetPasswordRequest request) {
+        try {
+            return ResponseEntity.ok(Map.of("message", authService.resetPassword(request)));
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("message", e.getMessage()));
+        }
+    }
+
+    @PatchMapping("/change-password")
+    public ResponseEntity<?> changePassword(
+            @AuthenticationPrincipal Long userId,
+            @Valid @RequestBody ChangePasswordRequest request) {
+        try {
+            return ResponseEntity.ok(Map.of("message", authService.changePassword(userId, request)));
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("message", e.getMessage()));
+        }
+    }
+
+    @DeleteMapping("/account")
+    public ResponseEntity<?> deleteAccount(@AuthenticationPrincipal Long userId) {
+        try {
+            return ResponseEntity.ok(Map.of("message", authService.deleteAccount(userId)));
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("message", e.getMessage()));
         }
     }
 }

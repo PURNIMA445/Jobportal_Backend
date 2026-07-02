@@ -13,4 +13,5 @@ public class FirebaseAuthRequest {
 
     @NotNull(message = "Role is required")
     private Role role;
+    private boolean allowCreate;
 }
