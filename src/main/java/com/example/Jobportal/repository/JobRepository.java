@@ -19,7 +19,10 @@ public interface JobRepository extends JpaRepository<JobEntity, Long> {
     List<JobEntity> findByRecruiterId(Long recruiterId);
 
     List<JobEntity> findByStatusAndJobType(JobStatus status, JobType jobType);
-
+    @Query("SELECT DISTINCT j FROM JobEntity j JOIN j.requiredSkills s " +
+            "WHERE j.status = com.example.Jobportal.enums.JobStatus.OPEN " +
+            "AND s.id IN :skillIds")
+    List<JobEntity> findRecommendedJobs(@Param("skillIds") List<Long> skillIds);
     @Query("SELECT j FROM JobEntity j WHERE " +
             "j.status = 'OPEN' AND " +
             "(LOWER(j.title) LIKE LOWER(CONCAT('%', :keyword, '%')) OR " +

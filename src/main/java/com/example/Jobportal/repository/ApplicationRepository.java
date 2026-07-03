@@ -11,7 +11,8 @@ import java.util.Optional;
 
 @Repository
 public interface ApplicationRepository extends JpaRepository<ApplicationEntity, Long> {
-
+    long countByCandidateId(Long candidateId);
+    long countByCandidateIdAndStatus(Long candidateId, AppStatus status);
     List<ApplicationEntity> findByCandidateId(Long candidateId);
 
     List<ApplicationEntity> findByJobId(Long jobId);

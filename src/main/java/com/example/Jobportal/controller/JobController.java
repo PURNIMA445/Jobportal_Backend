@@ -66,4 +66,12 @@ public class JobController {
             return ResponseEntity.badRequest().body(e.getMessage());
         }
     }
+    @GetMapping("/recommended")
+    public ResponseEntity<?> getRecommendedJobs(@AuthenticationPrincipal Long userId) {
+        try {
+            return ResponseEntity.ok(jobService.getRecommendedJobs(userId));
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
 }

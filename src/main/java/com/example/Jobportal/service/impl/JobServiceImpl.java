@@ -26,6 +26,24 @@ public class JobServiceImpl implements JobService {
     private final SkillRepository skillRepository;
     private final CompanyServiceImpl companyService;
     private final NotificationService notificationService;
+    private final CandidateProfileRepository candidateProfileRepository;
+
+    @Override
+    public List<JobResponse> getRecommendedJobs(Long userId) {
+        CandidateProfileEntity candidate = candidateProfileRepository.findByUserId(userId)
+                .orElseThrow(() -> new RuntimeException("Profile not found"));
+
+        List<Long> skillIds = candidate.getSkills().stream()
+                .map(SkillEntity::getId)
+                .collect(Collectors.toList());
+
+        if (skillIds.isEmpty()) {
+            return new ArrayList<>();
+        }
+
+        return jobRepository.findRecommendedJobs(skillIds)
+                .stream().map(this::toResponse).collect(Collectors.toList());
+    }
     @Override
     @Transactional
     public JobResponse createJob(Long userId, JobRequest request) {
