@@ -32,7 +32,11 @@ public class JwtUtils {
     }
 
     public Long getUserIdFromToken(String token) {
-        return parseClaims(token).get("userId", Long.class);
+        Object userId = parseClaims(token).get("userId");
+        if (userId instanceof Number) {
+            return ((Number) userId).longValue();
+        }
+        return null;
     }
 
     public String getEmailFromToken(String token) {

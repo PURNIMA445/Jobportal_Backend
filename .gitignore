@@ -36,3 +36,4 @@ build/
 src/main/resources/firebase-service-account.json
 error.log
 application.properties
+/uploads/

@@ -28,4 +28,32 @@ public class EmailUtils {
         );
         mailSender.send(message);
     }
+
+    public void sendInviteEmail(String toEmail, String companyName, String inviteLink) {
+        SimpleMailMessage message = new SimpleMailMessage();
+        message.setFrom(fromEmail);
+        message.setTo(toEmail);
+        message.setSubject("Invitation to join " + companyName + " on Smart Job Portal");
+        message.setText(
+                "You have been invited to join the team for " + companyName + ".\n\n" +
+                        "Click the link below to accept the invitation and join the company:\n" +
+                        inviteLink + "\n\n" +
+                        "This link will expire in 48 hours."
+        );
+        mailSender.send(message);
+    }
+
+    public void sendCompanyVerificationEmail(String toEmail, String companyName, boolean approved, String reason) {
+        SimpleMailMessage message = new SimpleMailMessage();
+        message.setFrom(fromEmail);
+        message.setTo(toEmail);
+        if (approved) {
+            message.setSubject("Company Approved: " + companyName);
+            message.setText("Great news! Your company profile for " + companyName + " has been approved.\nYou can now post jobs and invite team members.");
+        } else {
+            message.setSubject("Company Registration Rejected: " + companyName);
+            message.setText("Unfortunately, your company registration for " + companyName + " was rejected.\nReason: " + reason);
+        }
+        mailSender.send(message);
+    }
 }
