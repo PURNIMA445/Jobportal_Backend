@@ -39,6 +39,15 @@ public class JobEntity {
     private Double salaryMin;
     private Double salaryMax;
 
+    @Column(columnDefinition = "TEXT")
+    private String responsibilities;
+
+    @Column(columnDefinition = "TEXT")
+    private String requirements;
+
+    @Column(columnDefinition = "TEXT")
+    private String benefits;
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private JobStatus status;

@@ -32,6 +32,14 @@ public class CompanyEntity {
     @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
+    @Builder.Default
+    @Enumerated(EnumType.STRING)
+    private com.example.Jobportal.enums.CompanyStatus status = com.example.Jobportal.enums.CompanyStatus.PENDING_VERIFICATION;
+
+    private Long ownerId;
+
+    private String rejectionReason;
+
     @PrePersist
     protected void onCreate() {
         this.createdAt = LocalDateTime.now();

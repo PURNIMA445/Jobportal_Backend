@@ -28,4 +28,7 @@ public class RecruiterProfileEntity {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "company_id")
     private CompanyEntity company;
+
+    @Enumerated(EnumType.STRING)
+    private com.example.Jobportal.enums.CompanyRole companyRole;
 }
