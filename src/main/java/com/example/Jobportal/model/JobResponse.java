@@ -23,6 +23,9 @@ public class JobResponse {
     private ExperienceLevel experienceLevel;
     private Double salaryMin;
     private Double salaryMax;
+    private String responsibilities;
+    private String requirements;
+    private String benefits;
     private JobStatus status;
     private CompanyResponse company;
     private String recruiterName;

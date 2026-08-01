@@ -26,8 +26,10 @@ public class JobRequest {
 
     private Double salaryMin;
     private Double salaryMax;
+    private String responsibilities;
+    private String requirements;
+    private String benefits;
 
-    @NotNull(message = "Company is required")
     private Long companyId;
 
     private List<Long> requiredSkillIds;

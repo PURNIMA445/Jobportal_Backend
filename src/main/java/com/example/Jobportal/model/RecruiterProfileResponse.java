@@ -16,4 +16,5 @@ public class RecruiterProfileResponse {
     private String phone;
     private String designation;
     private CompanyResponse company;
+    private String companyRole;
 }
