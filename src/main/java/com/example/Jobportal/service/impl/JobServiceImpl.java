@@ -51,8 +51,14 @@ public class JobServiceImpl implements JobService {
                 .findByUserId(userId)
                 .orElseThrow(() -> new RuntimeException("Recruiter profile not found"));
 
-        CompanyEntity company = companyRepository.findById(request.getCompanyId())
-                .orElseThrow(() -> new RuntimeException("Company not found"));
+        CompanyEntity company = recruiter.getCompany();
+        if (company == null) {
+            throw new RuntimeException("You are not linked to any company. Please set up your company profile first.");
+        }
+
+        if (company.getStatus() != com.example.Jobportal.enums.CompanyStatus.APPROVED) {
+            throw new RuntimeException("Your company is pending admin verification or has been rejected");
+        }
 
         List<SkillEntity> skills = new ArrayList<>();
         if (request.getRequiredSkillIds() != null) {
@@ -70,6 +76,9 @@ public class JobServiceImpl implements JobService {
                 .experienceLevel(request.getExperienceLevel())
                 .salaryMin(request.getSalaryMin())
                 .salaryMax(request.getSalaryMax())
+                .responsibilities(request.getResponsibilities())
+                .requirements(request.getRequirements())
+                .benefits(request.getBenefits())
                 .company(company)
                 .recruiter(recruiter)
                 .requiredSkills(skills)
@@ -122,6 +131,39 @@ public class JobServiceImpl implements JobService {
         return toResponse(jobRepository.save(job));
     }
 
+    @Override
+    @Transactional
+    public JobResponse updateJob(Long jobId, Long userId, JobRequest request) {
+        JobEntity job = jobRepository.findById(jobId)
+                .orElseThrow(() -> new RuntimeException("Job not found"));
+
+        if (!job.getRecruiter().getUser().getId().equals(userId)) {
+            throw new RuntimeException("You can only edit your own jobs");
+        }
+
+        List<SkillEntity> skills = new ArrayList<>();
+        if (request.getRequiredSkillIds() != null) {
+            skills = request.getRequiredSkillIds().stream()
+                    .map(id -> skillRepository.findById(id)
+                            .orElseThrow(() -> new RuntimeException("Skill not found: " + id)))
+                    .collect(Collectors.toList());
+        }
+
+        job.setTitle(request.getTitle());
+        job.setDescription(request.getDescription());
+        job.setLocation(request.getLocation());
+        job.setJobType(request.getJobType());
+        job.setExperienceLevel(request.getExperienceLevel());
+        job.setSalaryMin(request.getSalaryMin());
+        job.setSalaryMax(request.getSalaryMax());
+        job.setResponsibilities(request.getResponsibilities());
+        job.setRequirements(request.getRequirements());
+        job.setBenefits(request.getBenefits());
+        job.setRequiredSkills(skills);
+
+        return toResponse(jobRepository.save(job));
+    }
+
     public JobResponse toResponse(JobEntity job) {
         List<CandidateProfileResponse.SkillResponse> skillResponses = job.getRequiredSkills()
                 .stream()
@@ -141,6 +183,9 @@ public class JobServiceImpl implements JobService {
                 .experienceLevel(job.getExperienceLevel())
                 .salaryMin(job.getSalaryMin())
                 .salaryMax(job.getSalaryMax())
+                .responsibilities(job.getResponsibilities())
+                .requirements(job.getRequirements())
+                .benefits(job.getBenefits())
                 .status(job.getStatus())
                 .company(companyService.toResponse(job.getCompany()))
                 .recruiterName(job.getRecruiter().getFullName())

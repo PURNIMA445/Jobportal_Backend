@@ -6,4 +6,7 @@ import org.springframework.web.multipart.MultipartFile;
 public interface FileStorageService {
     String storeResume(MultipartFile file, Long candidateId);
     Resource loadResumeAsResource(String storedFilename);
+    
+    String storeImage(MultipartFile file);
+    Resource loadImageAsResource(String storedFilename);
 }

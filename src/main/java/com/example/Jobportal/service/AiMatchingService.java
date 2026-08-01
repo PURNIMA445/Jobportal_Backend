@@ -5,7 +5,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 public interface AiMatchingService {
     MatchScoreResponse analyzeResume(
-            MultipartFile resume,
+            org.springframework.core.io.Resource resume,
             String jobDescription,
             String requiredSkills,
             String experienceLevel

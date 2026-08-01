@@ -5,7 +5,7 @@ import com.example.Jobportal.model.CompanyResponse;
 import java.util.List;
 
 public interface CompanyService {
-    CompanyResponse createCompany(CompanyRequest request);
+    CompanyResponse createCompany(Long userId, CompanyRequest request);
     CompanyResponse getCompany(Long id);
     List<CompanyResponse> searchCompanies(String name);
 }

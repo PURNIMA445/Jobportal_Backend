@@ -21,6 +21,71 @@ public class ApplicationServiceImpl implements ApplicationService {
     private final JobRepository jobRepository;
     private final NotificationRepository notificationRepository;
     private final JobServiceImpl jobService;
+    private final com.example.Jobportal.service.AiMatchingService aiMatchingService;
+    private final com.example.Jobportal.service.FileStorageService fileStorageService;
+
+    @Override
+    @Transactional
+    public com.example.Jobportal.dto.MatchScoreResponse checkMatchScore(Long applicationId, Long userId) {
+        // 1. get the application
+        ApplicationEntity application = applicationRepository
+                .findById(applicationId)
+                .orElseThrow(() -> new RuntimeException("Application not found"));
+
+        // 2. verify this candidate owns this application
+        if (!application.getCandidate().getUser().getId().equals(userId)) {
+            throw new RuntimeException("Access denied");
+        }
+
+        // 3. get job details for AI
+        JobEntity job = application.getJob();
+        String requiredSkills = job.getRequiredSkills()
+                .stream()
+                .map(s -> s.getName())
+                .collect(java.util.stream.Collectors.joining(","));
+
+        // 4. get the candidate's resume
+        String resumeUrl = application.getCandidate().getResumeUrl();
+        if (resumeUrl == null || resumeUrl.isBlank()) {
+            throw new RuntimeException("Candidate has no resume on profile");
+        }
+        org.springframework.core.io.Resource resumeResource = fileStorageService.loadResumeAsResource(resumeUrl);
+
+        // 5. call AI service
+        com.example.Jobportal.dto.MatchScoreResponse aiResult = aiMatchingService.analyzeResume(
+                resumeResource,
+                job.getDescription(),
+                requiredSkills,
+                job.getExperienceLevel().name()
+        );
+
+        // 6. store results in application
+        application.setMatchScore(aiResult.getMatchScore());
+        application.setMissingSkills(
+                String.join(",", aiResult.getMissingSkills())
+        );
+
+        // 7. compute rankScore
+        int experienceYears = application.getCandidate()
+                .getExperienceYears() != null
+                ? application.getCandidate().getExperienceYears() : 0;
+
+        int projectCount = application.getCandidate()
+                .getProjects() != null
+                ? application.getCandidate().getProjects().size() : 0;
+
+        double expScore = Math.min(experienceYears / 5.0, 1.0) * 20;
+        double projectScore = Math.min(projectCount / 3.0, 1.0) * 20;
+        double rankScore = (aiResult.getMatchScore() * 0.60)
+                + expScore + projectScore;
+
+        application.setRankScore(Math.round(rankScore * 10.0) / 10.0);
+
+        applicationRepository.save(application);
+
+        return aiResult;
+    }
+
 
     @Override
     @Transactional
@@ -97,6 +162,10 @@ public class ApplicationServiceImpl implements ApplicationService {
 
         if (!application.getJob().getRecruiter().getUser().getId().equals(userId)) {
             throw new RuntimeException("Access denied");
+        }
+
+        if (application.getStatus() == status) {
+            return toResponse(application);
         }
 
         application.setStatus(status);

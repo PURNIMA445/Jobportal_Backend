@@ -25,7 +25,7 @@ public class AiMatchingServiceImpl implements AiMatchingService {
 
     @Override
     public MatchScoreResponse analyzeResume(
-            MultipartFile resume,
+            org.springframework.core.io.Resource resume,
             String jobDescription,
             String requiredSkills,
             String experienceLevel) {
@@ -35,10 +35,10 @@ public class AiMatchingServiceImpl implements AiMatchingService {
             MultiValueMap<String, Object> body = new LinkedMultiValueMap<>();
 
             // wrap file bytes as a resource
-            ByteArrayResource fileResource = new ByteArrayResource(resume.getBytes()) {
+            ByteArrayResource fileResource = new ByteArrayResource(resume.getContentAsByteArray()) {
                 @Override
                 public String getFilename() {
-                    return resume.getOriginalFilename();
+                    return resume.getFilename();
                 }
             };
 

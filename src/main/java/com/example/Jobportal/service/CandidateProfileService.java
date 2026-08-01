@@ -10,4 +10,5 @@ public interface CandidateProfileService {
     CandidateProfileResponse getProfile(Long userId);
     CandidateProfileResponse updateProfile(Long userId, CandidateProfileRequest request);
     List<CandidateProfileResponse> getAllProfiles();
+    String uploadResume(Long userId, org.springframework.web.multipart.MultipartFile resume);
 }

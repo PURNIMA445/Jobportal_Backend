@@ -13,4 +13,6 @@ public interface ApplicationService {
 
     // NEW — enforces that only the recruiter who owns the job can access the CV
     ApplicationEntity getApplicationForCvAccess(Long applicationId, Long userId);
+
+    com.example.Jobportal.dto.MatchScoreResponse checkMatchScore(Long applicationId, Long userId);
 }

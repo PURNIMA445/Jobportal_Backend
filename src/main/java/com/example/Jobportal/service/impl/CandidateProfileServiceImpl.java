@@ -25,6 +25,21 @@ public class CandidateProfileServiceImpl implements CandidateProfileService {
     private final CandidateProfileRepository candidateProfileRepository;
     private final UserRepository userRepository;
     private final SkillRepository skillRepository;
+    private final com.example.Jobportal.service.FileStorageService fileStorageService;
+
+    @Override
+    @Transactional
+    public String uploadResume(Long userId, org.springframework.web.multipart.MultipartFile resume) {
+        CandidateProfileEntity candidate = candidateProfileRepository
+                .findByUserId(userId)
+                .orElseThrow(() -> new RuntimeException("Candidate profile not found"));
+
+        String storedFilename = fileStorageService.storeResume(resume, candidate.getId());
+        candidate.setResumeUrl(storedFilename);
+        candidateProfileRepository.save(candidate);
+        return storedFilename;
+    }
+
 
     @Override
     @Transactional

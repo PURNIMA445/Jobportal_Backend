@@ -11,11 +11,5 @@ public interface AuthService {
     User signup(SignupRequest request);
     AuthResponse login(LoginRequest request);
 
-    AuthResponse loginWithFirebase(String idToken, Role requestedRole, boolean allowCreate);
-    void sendVerificationOtp(String email);
-    void verifyEmail(String email, String otp);
-    void sendPasswordResetOtp(String email);
-    String resetPassword(ResetPasswordRequest request);
-    String changePassword(Long userId, ChangePasswordRequest request);
-    String deleteAccount(Long userId);
+    String deactivateAccount(Long userId);
 }

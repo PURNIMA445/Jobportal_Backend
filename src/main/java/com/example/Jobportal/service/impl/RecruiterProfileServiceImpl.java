@@ -89,6 +89,7 @@ public class RecruiterProfileServiceImpl implements RecruiterProfileService {
                 .company(profile.getCompany() != null
                         ? companyService.toResponse(profile.getCompany())
                         : null)
+                .companyRole(profile.getCompanyRole() != null ? profile.getCompanyRole().name() : null)
                 .build();
     }
 }

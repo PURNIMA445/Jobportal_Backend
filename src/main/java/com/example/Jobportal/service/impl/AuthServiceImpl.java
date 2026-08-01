@@ -1,6 +1,8 @@
 package com.example.Jobportal.service.impl;
 
 import com.example.Jobportal.dto.SignupRequest;
+import com.example.Jobportal.entity.CandidateProfileEntity;
+import com.example.Jobportal.entity.RecruiterProfileEntity;
 import com.example.Jobportal.entity.UserEntity;
 import com.example.Jobportal.exception.EmailNotVerifiedException;
 import com.example.Jobportal.model.User;
@@ -10,6 +12,7 @@ import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import com.example.Jobportal.service.EmailVerificationService;
 import com.example.Jobportal.dto.LoginRequest;
 import com.example.Jobportal.model.AuthResponse;
 import com.example.Jobportal.utils.JwtUtils;
@@ -44,6 +47,8 @@ public class AuthServiceImpl implements AuthService {
     private final ApplicationRepository applicationRepository;
     private final SavedJobRepository savedJobRepository;
     private final NotificationRepository notificationRepository;
+    private final EmailVerificationService emailVerificationService;
+
     @Override
     public User signup(SignupRequest request) {
 
@@ -62,7 +67,7 @@ public class AuthServiceImpl implements AuthService {
 
         // 3. Save to database
         UserEntity saved = userRepository.save(user);
-        sendVerificationOtp(saved.getEmail());
+        emailVerificationService.sendVerificationOtp(saved.getEmail());
         // 4. Return response model (never the entity)
         return new User(
                 saved.getId(),
@@ -71,84 +76,11 @@ public class AuthServiceImpl implements AuthService {
                 saved.getIsEmailVerified()
         );
     }
-    @Override
-    @Transactional
-    public void sendVerificationOtp(String email) {
-        UserEntity user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("User not found"));
-        if (user.getIsEmailVerified()) {
-            throw new RuntimeException("Email already verified");
-        }
-        String otp = otpUtils.generateOtp();
-        user.setOtpCode(otp);
-        user.setOtpExpiry(LocalDateTime.now().plusMinutes(10));
-        userRepository.save(user);
-        emailUtils.sendOtpEmail(email, otp, "Email Verification");
-    }
+
 
     @Override
     @Transactional
-    public void verifyEmail(String email, String otp) {
-        UserEntity user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("User not found"));
-        if (user.getOtpCode() == null || !user.getOtpCode().equals(otp)) {
-            throw new RuntimeException("Invalid OTP");
-        }
-        if (user.getOtpExpiry().isBefore(LocalDateTime.now())) {
-            throw new RuntimeException("OTP expired, please request a new one");
-        }
-        user.setIsEmailVerified(true);
-        user.setOtpCode(null);
-        user.setOtpExpiry(null);
-        userRepository.save(user);
-    }
-
-    @Override
-    @Transactional
-    public void sendPasswordResetOtp(String email) {
-        UserEntity user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("No account found with this email"));
-        String otp = otpUtils.generateOtp();
-        user.setOtpCode(otp);
-        user.setOtpExpiry(LocalDateTime.now().plusMinutes(10));
-        userRepository.save(user);
-        emailUtils.sendOtpEmail(email, otp, "Password Reset");
-    }
-
-    @Override
-    @Transactional
-    public String resetPassword(ResetPasswordRequest request) {
-        UserEntity user = userRepository.findByEmail(request.getEmail())
-                .orElseThrow(() -> new RuntimeException("User not found"));
-        if (user.getOtpCode() == null || !user.getOtpCode().equals(request.getOtp())) {
-            throw new RuntimeException("Invalid OTP");
-        }
-        if (user.getOtpExpiry().isBefore(LocalDateTime.now())) {
-            throw new RuntimeException("OTP expired, please request a new one");
-        }
-        user.setPassword(passwordEncoder.encode(request.getNewPassword()));
-        user.setOtpCode(null);
-        user.setOtpExpiry(null);
-        userRepository.save(user);
-        return "Password reset successfully";
-    }
-
-    @Override
-    @Transactional
-    public String changePassword(Long userId, ChangePasswordRequest request) {
-        UserEntity user = userRepository.findById(userId)
-                .orElseThrow(() -> new RuntimeException("User not found"));
-        if (!passwordEncoder.matches(request.getCurrentPassword(), user.getPassword())) {
-            throw new RuntimeException("Current password is incorrect");
-        }
-        user.setPassword(passwordEncoder.encode(request.getNewPassword()));
-        userRepository.save(user);
-        return "Password changed successfully";
-    }
-
-    @Override
-    @Transactional
-    public String deleteAccount(Long userId) {
+    public String deactivateAccount(Long userId) {
         UserEntity user = userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
@@ -157,46 +89,38 @@ public class AuthServiceImpl implements AuthService {
             if (recruiter != null) {
                 var jobs = jobRepository.findByRecruiterId(recruiter.getId());
                 if (!jobs.isEmpty()) {
-                    var jobIds = jobs.stream().map(j -> j.getId()).toList();
-                    var apps = applicationRepository.findByJobIdIn(jobIds);
-                    boolean hasActive = apps.stream()
-                            .anyMatch(a -> a.getStatus() != com.example.Jobportal.enums.AppStatus.REJECTED);
-                    if (hasActive) {
-                        throw new RuntimeException(
-                                "Cannot delete account: you have job posts with active applicants."
-                        );
-                    }
-                    applicationRepository.deleteByJobIdIn(jobIds);
-                    jobRepository.deleteAll(jobs);
+                    jobs.forEach(job -> {
+                        if (job.getStatus() == com.example.Jobportal.enums.JobStatus.OPEN) {
+                            job.setStatus(com.example.Jobportal.enums.JobStatus.CLOSED);
+                        }
+                    });
+                    jobRepository.saveAll(jobs);
                 }
-                recruiterProfileRepository.deleteByUserId(userId);
-            }
-        } else if (user.getRole() == Role.CANDIDATE) {
-            var candidate = candidateProfileRepository.findByUserId(userId).orElse(null);
-            if (candidate != null) {
-                applicationRepository.deleteByCandidateId(candidate.getId());
-                savedJobRepository.deleteByCandidateId(candidate.getId());
-                candidateProfileRepository.deleteByUserId(userId);
             }
         }
 
-        notificationRepository.deleteByUserId(userId);
-        userRepository.delete(user);
-        return "Account deleted successfully";
+        user.setIsActive(false);
+        userRepository.save(user);
+        return "Account deactivated successfully";
     }
     @Override
     public AuthResponse login(LoginRequest request) {
-
         // 1. Find user by email
         UserEntity user = userRepository.findByEmail(request.getEmail())
                 .orElseThrow(() -> new RuntimeException("Invalid email or password"));
         if (!user.getIsEmailVerified()) {
-            sendVerificationOtp(user.getEmail());
+            emailVerificationService.sendVerificationOtp(user.getEmail());
             throw new EmailNotVerifiedException(user.getEmail());
         }
         // 2. Compare passwords
         if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
             throw new RuntimeException("Invalid email or password");
+        }
+
+        // If user is deactivated, reactivate them on successful login
+        if (user.getIsActive() == null || !user.getIsActive()) {
+            user.setIsActive(true);
+            userRepository.save(user);
         }
 
         // 3. Generate JWT
@@ -210,42 +134,4 @@ public class AuthServiceImpl implements AuthService {
     }
 
 
-
-    @Transactional
-    @Override
-    public AuthResponse loginWithFirebase(String idToken, Role requestedRole, boolean allowCreate) {
-        FirebaseToken decodedToken;
-        try {
-            decodedToken = FirebaseAuth.getInstance().verifyIdToken(idToken);
-        } catch (Exception e) {
-            throw new RuntimeException("Invalid or expired Firebase token");
-        }
-
-        String email = decodedToken.getEmail();
-        if (email == null) {
-            throw new RuntimeException("No email found on this Firebase account");
-        }
-
-        UserEntity user = userRepository.findByEmail(email)
-                .orElseGet(() -> {
-                    if (!allowCreate) {
-                        throw new RuntimeException("No account found with this email. Please sign up first.");
-                    }
-                    UserEntity newUser = UserEntity.builder()
-                            .email(email)
-                            .googleId(decodedToken.getUid())
-                            .role(requestedRole)          // ← uses the choice, only for NEW users
-                            .isEmailVerified(true)
-                            .build();
-                    return userRepository.save(newUser);
-                });
-
-        String token = jwtUtils.generateToken(
-                user.getEmail(),
-                user.getRole().name(),
-                user.getId()
-        );
-
-        return new AuthResponse(token, user.getRole().name(), user.getId());
-    }
-}
+}

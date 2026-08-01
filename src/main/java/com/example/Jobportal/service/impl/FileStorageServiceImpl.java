@@ -20,6 +20,9 @@ public class FileStorageServiceImpl implements FileStorageService {
 
     @Value("${file.upload-dir:uploads/resumes}")
     private String uploadDir;
+    
+    @Value("${file.image-upload-dir:uploads/images}")
+    private String imageUploadDir;
 
     private static final long MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
 
@@ -66,11 +69,58 @@ public class FileStorageServiceImpl implements FileStorageService {
 
     @Override
     public Resource loadResumeAsResource(String storedFilename) {
+        return loadResource(storedFilename, uploadDir, "Resume");
+    }
+
+    @Override
+    public String storeImage(MultipartFile file) {
+        if (file == null || file.isEmpty()) {
+            throw new RuntimeException("Image file is required");
+        }
+
+        if (file.getSize() > MAX_FILE_SIZE) {
+            throw new RuntimeException("Image file must be under 5MB");
+        }
+
+        String originalFilename = file.getOriginalFilename();
+        String extension = "";
+        if (originalFilename != null && originalFilename.contains(".")) {
+            extension = originalFilename.substring(originalFilename.lastIndexOf(".")).toLowerCase();
+        }
+
+        if (!extension.equals(".jpg") && !extension.equals(".jpeg") && !extension.equals(".png") && !extension.equals(".webp")) {
+            throw new RuntimeException("Only JPG, JPEG, PNG, or WEBP files are allowed");
+        }
+
+        String storedFilename = "img_" + UUID.randomUUID() + extension;
+
         try {
-            Path uploadPath = Paths.get(uploadDir).toAbsolutePath().normalize();
+            Path uploadPath = Paths.get(imageUploadDir).toAbsolutePath().normalize();
+            Files.createDirectories(uploadPath);
+
+            Path targetLocation = uploadPath.resolve(storedFilename).normalize();
+
+            if (!targetLocation.startsWith(uploadPath)) {
+                throw new RuntimeException("Invalid file name");
+            }
+
+            Files.copy(file.getInputStream(), targetLocation, StandardCopyOption.REPLACE_EXISTING);
+            return storedFilename;
+        } catch (IOException e) {
+            throw new RuntimeException("Failed to store image file: " + e.getMessage());
+        }
+    }
+
+    @Override
+    public Resource loadImageAsResource(String storedFilename) {
+        return loadResource(storedFilename, imageUploadDir, "Image");
+    }
+
+    private Resource loadResource(String storedFilename, String dir, String type) {
+        try {
+            Path uploadPath = Paths.get(dir).toAbsolutePath().normalize();
             Path filePath = uploadPath.resolve(storedFilename).normalize();
 
-            // prevent path traversal (e.g. storedFilename containing "../")
             if (!filePath.startsWith(uploadPath)) {
                 throw new RuntimeException("Invalid file path");
             }
@@ -79,10 +129,10 @@ public class FileStorageServiceImpl implements FileStorageService {
             if (resource.exists() && resource.isReadable()) {
                 return resource;
             } else {
-                throw new RuntimeException("Resume file not found or not readable");
+                throw new RuntimeException(type + " file not found or not readable");
             }
         } catch (MalformedURLException e) {
-            throw new RuntimeException("Resume file not found: " + e.getMessage());
+            throw new RuntimeException(type + " file not found: " + e.getMessage());
         }
     }
 }
