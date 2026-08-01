@@ -21,6 +21,7 @@ import java.util.List;
 public class JwtAuthFilter extends OncePerRequestFilter {
 
     private final JwtUtils jwtUtils;
+    private final com.example.Jobportal.repository.UserRepository userRepository;
 
     @Override
     protected void doFilterInternal(HttpServletRequest request,
@@ -30,35 +31,60 @@ public class JwtAuthFilter extends OncePerRequestFilter {
 
         // 1. Read the Authorization header
         String authHeader = request.getHeader("Authorization");
-        System.out.println("AUTH HEADER: " + authHeader);
-        System.out.println("REQUEST URI: " + request.getRequestURI());
-        // 2. If no token, skip — Spring Security will handle it as unauthenticated
+        String debugMsg = "URI: " + request.getRequestURI() + " | AuthHeader: " + authHeader + "\n";
+        try {
+            java.nio.file.Files.write(java.nio.file.Paths.get("debug.txt"), debugMsg.getBytes(), java.nio.file.StandardOpenOption.CREATE, java.nio.file.StandardOpenOption.APPEND);
+        } catch(Exception e) {}
+
+        // 2. If no token, skip
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+            try {
+                java.nio.file.Files.write(java.nio.file.Paths.get("debug.txt"), "No valid Bearer token. Skipping.\n".getBytes(), java.nio.file.StandardOpenOption.APPEND);
+            } catch(Exception e) {}
             filterChain.doFilter(request, response);
             return;
         }
 
-        // 3. Extract the token (remove "Bearer " prefix)
+        // 3. Extract the token
         String token = authHeader.substring(7);
 
-        // 4. Validate token and set authentication
-        if (jwtUtils.validateToken(token)) {
-            String email = jwtUtils.getEmailFromToken(token);
-            String role = jwtUtils.getRoleFromToken(token);
-            Long userId = jwtUtils.getUserIdFromToken(token);
+        // 4. Validate token
+        boolean isValid = jwtUtils.validateToken(token);
+        try {
+            java.nio.file.Files.write(java.nio.file.Paths.get("debug.txt"), ("Token isValid: " + isValid + "\n").getBytes(), java.nio.file.StandardOpenOption.APPEND);
+        } catch(Exception e) {}
 
-            UsernamePasswordAuthenticationToken authentication =
-                    new UsernamePasswordAuthenticationToken(
-                            userId,        // ← store userId as principal, not email
-                            null,
-                            List.of(new SimpleGrantedAuthority("ROLE_" + role))
-                    );
+        if (isValid) {
+            try {
+                String email = jwtUtils.getEmailFromToken(token);
+                String role = jwtUtils.getRoleFromToken(token);
+                Long userId = jwtUtils.getUserIdFromToken(token);
 
-            authentication.setDetails(
-                    new WebAuthenticationDetailsSource().buildDetails(request)
-            );
+                // Fallback for older tokens that lack the userId claim
+                if (userId == null && email != null) {
+                    userId = userRepository.findByEmail(email)
+                            .map(com.example.Jobportal.entity.UserEntity::getId)
+                            .orElse(null);
+                }
 
-            SecurityContextHolder.getContext().setAuthentication(authentication);
+                UsernamePasswordAuthenticationToken authentication =
+                        new UsernamePasswordAuthenticationToken(
+                                userId,        // ← store userId as principal, not email
+                                null,
+                                List.of(new SimpleGrantedAuthority("ROLE_" + role))
+                        );
+
+                authentication.setDetails(
+                        new WebAuthenticationDetailsSource().buildDetails(request)
+                );
+
+                SecurityContextHolder.getContext().setAuthentication(authentication);
+                java.nio.file.Files.write(java.nio.file.Paths.get("debug.txt"), "Authentication SET successfully.\n".getBytes(), java.nio.file.StandardOpenOption.APPEND);
+            } catch (Exception ex) {
+                try {
+                    java.nio.file.Files.write(java.nio.file.Paths.get("debug.txt"), ("EXCEPTION IN FILTER: " + ex.toString() + "\n").getBytes(), java.nio.file.StandardOpenOption.APPEND);
+                } catch(Exception ignored) {}
+            }
         }
 
         filterChain.doFilter(request, response);
