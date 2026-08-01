@@ -20,32 +20,20 @@ public class RecruiterProfileController {
     public ResponseEntity<?> createProfile(
             @AuthenticationPrincipal Long userId,
             @Valid @RequestBody RecruiterProfileRequest request) {
-        try {
-            return ResponseEntity.status(HttpStatus.CREATED)
-                    .body(recruiterProfileService.createProfile(userId, request));
-        } catch (RuntimeException e) {
-            return ResponseEntity.badRequest().body(e.getMessage());
-        }
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(recruiterProfileService.createProfile(userId, request));
     }
 
     @GetMapping("/profile")
     public ResponseEntity<?> getProfile(@AuthenticationPrincipal Long userId) {
-        try {
-            return ResponseEntity.ok(recruiterProfileService.getProfile(userId));
-        } catch (RuntimeException e) {
-            return ResponseEntity.badRequest().body(e.getMessage());
-        }
+        return ResponseEntity.ok(recruiterProfileService.getProfile(userId));
     }
 
     @PutMapping("/profile")
     public ResponseEntity<?> updateProfile(
             @AuthenticationPrincipal Long userId,
             @Valid @RequestBody RecruiterProfileRequest request) {
-        try {
-            return ResponseEntity.ok(
-                    recruiterProfileService.updateProfile(userId, request));
-        } catch (RuntimeException e) {
-            return ResponseEntity.badRequest().body(e.getMessage());
-        }
+        return ResponseEntity.ok(
+                recruiterProfileService.updateProfile(userId, request));
     }
 }

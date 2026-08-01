@@ -20,21 +20,13 @@ public class JobController {
     public ResponseEntity<?> createJob(
             @AuthenticationPrincipal Long userId,
             @Valid @RequestBody JobRequest request) {
-        try {
-            return ResponseEntity.status(HttpStatus.CREATED)
-                    .body(jobService.createJob(userId, request));
-        } catch (RuntimeException e) {
-            return ResponseEntity.badRequest().body(e.getMessage());
-        }
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(jobService.createJob(userId, request));
     }
 
     @GetMapping("/{id}")
     public ResponseEntity<?> getJob(@PathVariable Long id) {
-        try {
-            return ResponseEntity.ok(jobService.getJob(id));
-        } catch (RuntimeException e) {
-            return ResponseEntity.badRequest().body(e.getMessage());
-        }
+        return ResponseEntity.ok(jobService.getJob(id));
     }
 
     @GetMapping
@@ -44,11 +36,7 @@ public class JobController {
 
     @GetMapping("/my-jobs")
     public ResponseEntity<?> getMyJobs(@AuthenticationPrincipal Long userId) {
-        try {
-            return ResponseEntity.ok(jobService.getJobsByRecruiter(userId));
-        } catch (RuntimeException e) {
-            return ResponseEntity.badRequest().body(e.getMessage());
-        }
+        return ResponseEntity.ok(jobService.getJobsByRecruiter(userId));
     }
 
     @GetMapping("/search")
@@ -60,18 +48,19 @@ public class JobController {
     public ResponseEntity<?> closeJob(
             @PathVariable Long id,
             @AuthenticationPrincipal Long userId) {
-        try {
-            return ResponseEntity.ok(jobService.closeJob(id, userId));
-        } catch (RuntimeException e) {
-            return ResponseEntity.badRequest().body(e.getMessage());
-        }
+        return ResponseEntity.ok(jobService.closeJob(id, userId));
     }
+
+    @PutMapping("/{id}")
+    public ResponseEntity<?> updateJob(
+            @PathVariable Long id,
+            @AuthenticationPrincipal Long userId,
+            @Valid @RequestBody JobRequest request) {
+        return ResponseEntity.ok(jobService.updateJob(id, userId, request));
+    }
+
     @GetMapping("/recommended")
     public ResponseEntity<?> getRecommendedJobs(@AuthenticationPrincipal Long userId) {
-        try {
-            return ResponseEntity.ok(jobService.getRecommendedJobs(userId));
-        } catch (RuntimeException e) {
-            return ResponseEntity.badRequest().body(e.getMessage());
-        }
+        return ResponseEntity.ok(jobService.getRecommendedJobs(userId));
     }
 }

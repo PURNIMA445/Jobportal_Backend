@@ -21,47 +21,26 @@ public class CandidateProfileController {
     public ResponseEntity<?> createProfile(
             @AuthenticationPrincipal Long userId,
             @Valid @RequestBody CandidateProfileRequest request) {
-        try {
-            CandidateProfileResponse response =
-                    candidateProfileService.createProfile(userId, request);
-            return ResponseEntity.status(HttpStatus.CREATED).body(response);
-        } catch (RuntimeException e) {
-            return ResponseEntity.badRequest().body(e.getMessage());
-        }
+        CandidateProfileResponse response =
+                candidateProfileService.createProfile(userId, request);
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
     @GetMapping("/profile")
     public ResponseEntity<?> getProfile(@AuthenticationPrincipal Long userId) {
-        try {
-            return ResponseEntity.ok(candidateProfileService.getProfile(userId));
-        } catch (RuntimeException e) {
-            return ResponseEntity.badRequest().body(e.getMessage());
-        }
+        return ResponseEntity.ok(candidateProfileService.getProfile(userId));
     }
 
     @PutMapping("/profile")
     public ResponseEntity<?> updateProfile(
             @AuthenticationPrincipal Long userId,
             @Valid @RequestBody CandidateProfileRequest request) {
-        try {
-            return ResponseEntity.ok(
-                    candidateProfileService.updateProfile(userId, request));
-        } catch (RuntimeException e) {
-            return ResponseEntity.badRequest().body(e.getMessage());
-        }
+        return ResponseEntity.ok(
+                candidateProfileService.updateProfile(userId, request));
     }
 
     @GetMapping("/search")
     public ResponseEntity<?> searchCandidates() {
-        try {
-            return ResponseEntity.ok(candidateProfileService.getAllProfiles());
-        } catch (RuntimeException e) {
-            return ResponseEntity.badRequest().body(e.getMessage());
-        }
-    }
-
-    private Long getUserIdFromEmail(String email) {
-        // we'll replace this with a cleaner solution next
-        throw new RuntimeException("Not implemented yet");
+        return ResponseEntity.ok(candidateProfileService.getAllProfiles());
     }
 }
