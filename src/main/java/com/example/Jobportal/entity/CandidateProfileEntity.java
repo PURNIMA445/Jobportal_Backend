@@ -48,4 +48,8 @@ public class CandidateProfileEntity {
     @OneToMany(mappedBy = "candidate", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     @Builder.Default
     private List<ProjectEntity> projects = new ArrayList<>();
+
+    @OneToMany(mappedBy = "candidate", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    @Builder.Default
+    private List<ExperienceEntity> experiences = new ArrayList<>();
 }

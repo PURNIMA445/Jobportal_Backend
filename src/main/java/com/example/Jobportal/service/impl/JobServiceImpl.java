@@ -60,6 +60,10 @@ public class JobServiceImpl implements JobService {
             throw new RuntimeException("Your company is pending admin verification or has been rejected");
         }
 
+        if (recruiter.getCompanyJoinStatus() != com.example.Jobportal.enums.CompanyJoinStatus.APPROVED) {
+            throw new RuntimeException("Your request to join this company is pending verification by the company admin");
+        }
+
         List<SkillEntity> skills = new ArrayList<>();
         if (request.getRequiredSkillIds() != null) {
             skills = request.getRequiredSkillIds().stream()
@@ -112,6 +116,20 @@ public class JobServiceImpl implements JobService {
     }
 
     @Override
+    public List<JobResponse> getCompanyJobs(Long userId) {
+        RecruiterProfileEntity recruiter = recruiterProfileRepository
+                .findByUserId(userId)
+                .orElseThrow(() -> new RuntimeException("Recruiter profile not found"));
+        
+        if (recruiter.getCompany() == null) {
+            return new ArrayList<>();
+        }
+        
+        return jobRepository.findByCompanyId(recruiter.getCompany().getId())
+                .stream().map(this::toResponse).collect(Collectors.toList());
+    }
+
+    @Override
     public List<JobResponse> searchJobs(String keyword) {
         return jobRepository.searchByKeyword(keyword)
                 .stream().map(this::toResponse).collect(Collectors.toList());
@@ -123,8 +141,17 @@ public class JobServiceImpl implements JobService {
         JobEntity job = jobRepository.findById(jobId)
                 .orElseThrow(() -> new RuntimeException("Job not found"));
 
-        if (!job.getRecruiter().getUser().getId().equals(userId)) {
-            throw new RuntimeException("You can only close your own jobs");
+        RecruiterProfileEntity userRecruiter = recruiterProfileRepository.findByUserId(userId)
+                .orElseThrow(() -> new RuntimeException("Recruiter profile not found"));
+        
+        boolean isOwner = job.getRecruiter().getUser().getId().equals(userId);
+        boolean isAdmin = userRecruiter.getCompanyRole() == com.example.Jobportal.enums.CompanyRole.ADMIN &&
+                          userRecruiter.getCompany() != null &&
+                          job.getCompany() != null &&
+                          userRecruiter.getCompany().getId().equals(job.getCompany().getId());
+
+        if (!isOwner && !isAdmin) {
+            throw new RuntimeException("You can only close your own jobs or you must be an admin of the company");
         }
 
         job.setStatus(JobStatus.CLOSED);
@@ -137,8 +164,17 @@ public class JobServiceImpl implements JobService {
         JobEntity job = jobRepository.findById(jobId)
                 .orElseThrow(() -> new RuntimeException("Job not found"));
 
-        if (!job.getRecruiter().getUser().getId().equals(userId)) {
-            throw new RuntimeException("You can only edit your own jobs");
+        RecruiterProfileEntity userRecruiter = recruiterProfileRepository.findByUserId(userId)
+                .orElseThrow(() -> new RuntimeException("Recruiter profile not found"));
+        
+        boolean isOwner = job.getRecruiter().getUser().getId().equals(userId);
+        boolean isAdmin = userRecruiter.getCompanyRole() == com.example.Jobportal.enums.CompanyRole.ADMIN &&
+                          userRecruiter.getCompany() != null &&
+                          job.getCompany() != null &&
+                          userRecruiter.getCompany().getId().equals(job.getCompany().getId());
+
+        if (!isOwner && !isAdmin) {
+            throw new RuntimeException("You can only edit your own jobs or you must be an admin of the company");
         }
 
         List<SkillEntity> skills = new ArrayList<>();
@@ -165,6 +201,7 @@ public class JobServiceImpl implements JobService {
     }
 
     public JobResponse toResponse(JobEntity job) {
+        if (job == null) return null;
         List<CandidateProfileResponse.SkillResponse> skillResponses = job.getRequiredSkills()
                 .stream()
                 .map(s -> CandidateProfileResponse.SkillResponse.builder()

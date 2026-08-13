@@ -38,4 +38,18 @@ public class CandidateProfileRequest {
         @NotNull(message = "Complexity is required")
         private ProjectComplexity complexity;
     }
+
+    private List<ExperienceRequest> experiences;
+
+    @Data
+    public static class ExperienceRequest {
+        @NotBlank(message = "Company name is required")
+        private String companyName;
+
+        @NotBlank(message = "Job title is required")
+        private String jobTitle;
+
+        private String duration;
+        private String description;
+    }
 }

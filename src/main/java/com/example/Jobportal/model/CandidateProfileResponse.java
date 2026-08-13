@@ -24,6 +24,7 @@ public class CandidateProfileResponse {
     private Integer experienceYears;
     private List<SkillResponse> skills;
     private List<ProjectResponse> projects;
+    private List<ExperienceResponse> experiences;
 
     @Data
     @Builder
@@ -46,5 +47,17 @@ public class CandidateProfileResponse {
         private String techStack;
         private String projectUrl;
         private ProjectComplexity complexity;
+    }
+
+    @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class ExperienceResponse {
+        private Long id;
+        private String companyName;
+        private String jobTitle;
+        private String duration;
+        private String description;
     }
 }

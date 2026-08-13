@@ -77,4 +77,24 @@ public class CompanyController {
         inviteService.removeMember(userId, id, memberId);
         return ResponseEntity.ok(Map.of("message", "Member removed successfully"));
     }
+
+    @GetMapping("/{id}/members/pending")
+    public ResponseEntity<?> getPendingMembers(
+            @AuthenticationPrincipal Long userId,
+            @PathVariable Long id) {
+        return ResponseEntity.ok(companyService.getPendingMembers(userId, id));
+    }
+
+    @PutMapping("/{id}/members/{memberId}/verify")
+    public ResponseEntity<?> verifyMember(
+            @AuthenticationPrincipal Long userId,
+            @PathVariable Long id,
+            @PathVariable Long memberId,
+            @RequestBody Map<String, Boolean> body) {
+        Boolean isApproved = body.getOrDefault("isApproved", false);
+        companyService.verifyMember(userId, id, memberId, isApproved);
+        return ResponseEntity.ok(Map.of(
+            "message", isApproved ? "Member approved successfully" : "Member rejected successfully"
+        ));
+    }
 }

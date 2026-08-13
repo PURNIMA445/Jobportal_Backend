@@ -27,7 +27,7 @@ public class SavedJobServiceImpl implements SavedJobService {
                 .orElseThrow(() -> new RuntimeException("Candidate profile not found"));
 
         if (savedJobRepository.existsByCandidateIdAndJobId(candidate.getId(), jobId)) {
-            throw new RuntimeException("Job already saved");
+            return;
         }
 
         JobEntity job = jobRepository.findById(jobId)

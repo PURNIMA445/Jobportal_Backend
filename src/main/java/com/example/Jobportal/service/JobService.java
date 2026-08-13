@@ -13,4 +13,5 @@ public interface JobService {
     JobResponse closeJob(Long jobId, Long userId);
     List<JobResponse> getRecommendedJobs(Long userId);
     JobResponse updateJob(Long jobId, Long userId, JobRequest request);
+    List<JobResponse> getCompanyJobs(Long userId);
 }

@@ -11,4 +11,5 @@ public interface RecruiterProfileRepository extends JpaRepository<RecruiterProfi
     Boolean existsByUserId(Long userId);
     void deleteByUserId(Long userId);
     java.util.List<RecruiterProfileEntity> findByCompanyId(Long companyId);
+    java.util.List<RecruiterProfileEntity> findByCompanyIdAndCompanyJoinStatus(Long companyId, com.example.Jobportal.enums.CompanyJoinStatus status);
 }

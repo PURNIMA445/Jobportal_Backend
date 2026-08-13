@@ -5,6 +5,7 @@ import com.example.Jobportal.entity.CandidateProfileEntity;
 import com.example.Jobportal.entity.ProjectEntity;
 import com.example.Jobportal.entity.SkillEntity;
 import com.example.Jobportal.entity.UserEntity;
+import com.example.Jobportal.entity.ExperienceEntity;
 import com.example.Jobportal.model.CandidateProfileResponse;
 import com.example.Jobportal.repository.CandidateProfileRepository;
 import com.example.Jobportal.repository.SkillRepository;
@@ -74,7 +75,13 @@ public class CandidateProfileServiceImpl implements CandidateProfileService {
             profile.setProjects(projects);
         }
 
-        // 6. Save — cascade saves projects too
+        // 6. Build and attach experiences
+        if (request.getExperiences() != null) {
+            List<ExperienceEntity> experiences = buildExperiences(request.getExperiences(), profile);
+            profile.setExperiences(experiences);
+        }
+
+        // 7. Save — cascade saves projects too
         CandidateProfileEntity saved = candidateProfileRepository.save(profile);
 
         return toResponse(saved);
@@ -85,6 +92,14 @@ public class CandidateProfileServiceImpl implements CandidateProfileService {
         CandidateProfileEntity profile = candidateProfileRepository
                 .findByUserId(userId)
                 .orElseThrow(() -> new RuntimeException("Profile not found"));
+        return toResponse(profile);
+    }
+
+    @Override
+    public CandidateProfileResponse getProfileById(Long id) {
+        CandidateProfileEntity profile = candidateProfileRepository
+                .findById(id)
+                .orElseThrow(() -> new RuntimeException("Candidate profile not found"));
         return toResponse(profile);
     }
 
@@ -109,6 +124,13 @@ public class CandidateProfileServiceImpl implements CandidateProfileService {
             profile.getProjects().clear();
             List<ProjectEntity> projects = buildProjects(request.getProjects(), profile);
             profile.getProjects().addAll(projects);
+        }
+
+        // replace experiences
+        if (request.getExperiences() != null) {
+            profile.getExperiences().clear();
+            List<ExperienceEntity> experiences = buildExperiences(request.getExperiences(), profile);
+            profile.getExperiences().addAll(experiences);
         }
 
         CandidateProfileEntity saved = candidateProfileRepository.save(profile);
@@ -148,6 +170,21 @@ public class CandidateProfileServiceImpl implements CandidateProfileService {
                 .collect(Collectors.toList());
     }
 
+    private List<ExperienceEntity> buildExperiences(
+            List<CandidateProfileRequest.ExperienceRequest> experienceRequests,
+            CandidateProfileEntity profile) {
+
+        return experienceRequests.stream()
+                .map(er -> ExperienceEntity.builder()
+                        .candidate(profile)
+                        .companyName(er.getCompanyName())
+                        .jobTitle(er.getJobTitle())
+                        .duration(er.getDuration())
+                        .description(er.getDescription())
+                        .build())
+                .collect(Collectors.toList());
+    }
+
     private CandidateProfileResponse toResponse(CandidateProfileEntity profile) {
         List<CandidateProfileResponse.SkillResponse> skillResponses = profile.getSkills()
                 .stream()
@@ -170,6 +207,17 @@ public class CandidateProfileServiceImpl implements CandidateProfileService {
                         .build())
                 .collect(Collectors.toList());
 
+        List<CandidateProfileResponse.ExperienceResponse> experienceResponses = profile.getExperiences()
+                .stream()
+                .map(e -> CandidateProfileResponse.ExperienceResponse.builder()
+                        .id(e.getId())
+                        .companyName(e.getCompanyName())
+                        .jobTitle(e.getJobTitle())
+                        .duration(e.getDuration())
+                        .description(e.getDescription())
+                        .build())
+                .collect(Collectors.toList());
+
         return CandidateProfileResponse.builder()
                 .id(profile.getId())
                 .userId(profile.getUser().getId())
@@ -182,6 +230,7 @@ public class CandidateProfileServiceImpl implements CandidateProfileService {
                 .experienceYears(profile.getExperienceYears())
                 .skills(skillResponses)
                 .projects(projectResponses)
+                .experiences(experienceResponses)
                 .build();
     }
 }

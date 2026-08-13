@@ -31,4 +31,7 @@ public class RecruiterProfileEntity {
 
     @Enumerated(EnumType.STRING)
     private com.example.Jobportal.enums.CompanyRole companyRole;
+
+    @Enumerated(EnumType.STRING)
+    private com.example.Jobportal.enums.CompanyJoinStatus companyJoinStatus;
 }

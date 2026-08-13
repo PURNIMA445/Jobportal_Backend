@@ -8,6 +8,7 @@ import java.util.List;
 public interface CandidateProfileService {
     CandidateProfileResponse createProfile(Long userId, CandidateProfileRequest request);
     CandidateProfileResponse getProfile(Long userId);
+    CandidateProfileResponse getProfileById(Long id);
     CandidateProfileResponse updateProfile(Long userId, CandidateProfileRequest request);
     List<CandidateProfileResponse> getAllProfiles();
     String uploadResume(Long userId, org.springframework.web.multipart.MultipartFile resume);

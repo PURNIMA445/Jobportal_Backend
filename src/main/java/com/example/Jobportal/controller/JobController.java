@@ -39,6 +39,11 @@ public class JobController {
         return ResponseEntity.ok(jobService.getJobsByRecruiter(userId));
     }
 
+    @GetMapping("/company-jobs")
+    public ResponseEntity<?> getCompanyJobs(@AuthenticationPrincipal Long userId) {
+        return ResponseEntity.ok(jobService.getCompanyJobs(userId));
+    }
+
     @GetMapping("/search")
     public ResponseEntity<?> searchJobs(@RequestParam String keyword) {
         return ResponseEntity.ok(jobService.searchJobs(keyword));
